@@ -77,9 +77,7 @@ BIVREST и **UNIVERSE 69** — это два взаимодополняющих 
 2. Применяйте протокол **BIVREST** для верификации и сбора данных
 3. Обучайте модели на размеченных данных, полученных из игры
 
-**Ссылка на проект:** [UNIVERSE 69 на GitHub](https://github.com/olesyalazareva/universe69)
-ДЛЯ ФАЙЛА /README.en.md (АНГЛИЙСКАЯ ВЕРСИЯ)
----
+**Ссылка на проект:**[UNIVERSE 69 на GitHub](https://github.com/olesyalazareva/universe69)
 
 ## Контакты автора
 
