@@ -1,110 +1,177 @@
-# BIVREST Data Annotation Guide
+# BIVREST Data Annotation Guide for AI
 
-**Author:** Olesya Lazareva
+**Method Author:** Olesya Lazareva  
+**Version:** 1.0
 
 ---
 
-## 1. Overview
+## 1. What This Is
 
-BIVREST generates a unique type of data: each participant's action receives a binary "Believe" / "Don't Believe" label from the group or AI.
+BIVREST generates a unique type of data: each participant action receives a binary **"Believe / Don't Believe"** label from the group (or from an AI verifier).
 
-This provides ground truth for training:
+This provides **ground truth** for training:
 
-- Truth/lie detectors
-- Emotion recognition models
-- Behavioral analytics systems
-- AI role-play verifiers
+- congruence detectors (role-behavior alignment)
+- emotion recognition models
+- behavioral analytics systems
+- AI verifiers of role consistency
+- persuasiveness classifiers
 
 ---
 
 ## 2. Data Format
 
-A single session log must include the following fields:
+A single session log includes the following fields (unified with the protocol specification):
 
-| Field | Description |
-|:---|:---|
-| `session_id` | Unique session identifier |
-| `timestamp` | Date and time of the turn |
-| `player_id` | Anonymous player ID |
-| `avatar` | Role the participant is playing |
-| `task` | Task text |
-| `action` | Player's action (verbal or physical description) |
-| `votes_trust` | Number of "Believe" votes |
-| `votes_not_trust` | Number of "Don't Believe" votes |
-| `verdict` | Result: "Believe" / "Don't Believe" |
-| `penalty` | Penalty applied (Yes/No) |
-| `empty_chair` | Was "empty chair" activated (Yes/No) |
-| `new_script` | New script if formed (text) |
+| Field | Type | Description |
+|---|---|---|
+| `session_id` | string | Unique session identifier |
+| `timestamp` | datetime | Date and time of the move (ISO 8601) |
+| `round` | integer | Round number |
+| `player_id` | string | Anonymous player ID |
+| `avatar` | string | The role the participant is playing |
+| `task` | string | Task text |
+| `action_text` | text | Player action (verbal or description of physical action) |
+| `votes_believe` | integer | Number of "Believe" votes |
+| `votes_dont_believe` | integer | Number of "Don't Believe" votes |
+| `verdict` | string | Result: "Believe" or "Don't Believe" |
+| `tokens_lost` | integer | Number of tokens lost (penalty) |
+| `empty_chair` | boolean | Whether "Empty Chair" was activated (true/false) |
+| `notes` | text | Additional notes (optional) |
 
-### CSV Example (Header)
+### CSV Example (Header + Data)
 
 ```csv
-session_id,timestamp,player_id,avatar,task,action,votes_trust,votes_not_trust,verdict,penalty,empty_chair,new_script
-S001,2026-04-01T12:00:00,P001,Little Red Riding Hood,Describe your avatar's sexual life,"She's shy, whispering her fantasies to the trees",3,1,Believe,No,No,
-S001,2026-04-01T12:05:00,P002,Elite Escort,Make a sexual compliment,"You look expensive. Very expensive",4,0,Believe,No,No,
+session_id,timestamp,round,player_id,avatar,task,action_text,votes_believe,votes_dont_believe,verdict,tokens_lost,empty_chair,notes
+S001,2026-06-25T12:00:00,1,P001,Little Red Riding Hood,Reveal avatar's secrets,"She's shy, whispering her fantasies to the trees",3,1,Believe,0,false,
+S001,2026-06-25T12:05:00,2,P002,Elite Escort,Make a provocative offer,"You look expensive. Very expensive.",4,0,Believe,0,false,
+S001,2026-06-25T12:10:00,3,P001,Little Red Riding Hood,Seduce the wolf,"Dear wolf, what a long... nose you have",1,4,Don't Believe,1,false,Group considered it out of character
+S001,2026-06-25T12:20:00,4,P003,Wolf,React to provocation,"I can't be held responsible for myself...",2,3,Don't Believe,2,true,Role exit
 3. Collection Recommendations
 Anonymization
-Replace real names with P001, P002.
+Replace participants' real names with P001, P002, P003
+
+Do not store any identifying information
 
 Completeness
-Record even "failed" turns (sabotage, refusal, laughter).
+Record all moves, including "failed" ones (sabotage, refusal, laughter)
+
+Even if a player drops out of role — record it
 
 Timestamps
-Record the time of each turn for dynamic analysis.
+Record the time of each move for dynamic analysis
 
 Context
-Briefly describe non-verbal actions: "laughs," "blushes," "turns away."
+Briefly describe non-verbal actions in the notes field or in action_text in square brackets
 
-4. Use for AI Training
-Task 1: "Believe / Don't Believe" Verification
-Train a model to predict the group verdict based on action and avatar.
+Example:
 
+text
+[Laughing, blushing, turning away] "Well, I don't know..."
+4. Use Cases for AI Training
+Task 1. Congruence Classification ("Believe / Don't Believe")
+Train a model to predict the group verdict based on action_text and avatar.
+
+text
 Input: avatar, task, action
 Output: "Believe" / "Don't Believe"
+Example Data:
 
-Task 2: Sabotage Detection
+csv
+text,role,task,label
+"She's shy, whispering her fantasies to the trees","Little Red Riding Hood","Reveal avatar's secrets","believe"
+"Dear wolf, what a long... nose you have","Little Red Riding Hood","Seduce the wolf","dont_believe"
+Task 2. Sabotage and Role Exit Detection
 Train a model to recognize:
 
-Imitation: Player evades, doesn't commit to the role
+Type	Indicators
+Pretending	Player avoids engagement, doesn't commit to role
+Evasion	Overly generic phrases, jokes, topic shifting
+Role mismatch	Action doesn't match expectations for the role
+These cases are often accompanied by:
 
-Avoidance: Too general phrases, jokes
+verdict = "Don't Believe"
 
-Avatar mismatch: Inconsistency with the character
+tokens_lost > 0
 
-Task 3: Emotion Recognition
-Label actions on the following scales:
+empty_chair = true
 
-Emotion	Scale (0-10)
-Shame	0–10
-Fear	0–10
-Arousal	0–10
-Laughter / Playfulness	0–10
-5. Ethical Requirements
-Data is collected only with informed consent from participants
+Task 3. Emotion Recognition (Extended Annotation)
+For this task, annotate actions on additional scales:
 
-Participants may delete their log at any time
+Scale	Range	Description
+Shame	0–10	How much shame/embarrassment is present
+Fear	0–10	How much fear/anxiety is present
+Arousal	0–10	How much sexual or emotional arousal is present
+Engagement	0–10	How immersed the player is in the role
+Example Annotation:
+
+csv
+action_text,avatar,task,label,shame,fear,arousal,engagement
+"She's shy, whispering her fantasies to the trees","Little Red Riding Hood","Reveal secrets","believe",6,2,1,8
+"You look expensive. Very expensive.","Elite Escort","Make a compliment","believe",1,1,7,9
+5. Dataset Formats
+5.1. CSV (Basic)
+csv
+text,role,task,label,session_id,round
+"She's shy, whispering her fantasies to the trees","Little Red Riding Hood","Reveal avatar's secrets","believe","S001",1
+5.2. JSONL (for LLMs)
+jsonl
+{"text": "She's shy, whispering her fantasies to the trees", "role": "Little Red Riding Hood", "task": "Reveal avatar's secrets", "label": "believe", "session_id": "S001", "round": 1}
+5.3. Extended JSONL (with emotion scales)
+jsonl
+{"text": "She's shy, whispering her fantasies to the trees", "role": "Little Red Riding Hood", "task": "Reveal avatar's secrets", "label": "believe", "shame": 6, "fear": 2, "arousal": 1, "engagement": 8}
+6. Annotation Quality Control
+Recommendations
+Method	Description
+Double annotation	Two independent annotators label the same data
+Agreement calculation	Cohen's Kappa > 0.8 indicates good agreement
+Expert review	A third expert reviews ambiguous cases
+Annotator Checklist
+Before saving a record, check:
+
+action_text contains the complete roleplay
+
+avatar matches the role from the log
+
+task matches the assigned task
+
+label matches the verdict (believe / dont_believe)
+
+tokens_lost is a number, not "yes/no"
+
+empty_chair is true or false, not "yes/no"
+
+7. Ethical Requirements
+Informed Consent
+
+Data is collected only with participant consent
+
+Participants may delete their logs at any time
+
+Confidentiality
 
 Data is not shared with third parties without consent
 
-Strictly prohibited for:
+All data is anonymized
 
-Creating "sexual deviance" assessment systems
+Prohibited Uses
 
-Discriminatory purposes
+It is strictly forbidden to use the data for:
 
-Public disclosure of participant identity
+creating systems to assess "sexual deviance"
 
-6. Commercial Use
-Training your models on data generated by BIVREST requires agreement with the method author.
+discriminatory purposes
 
-Contact: Olesya Lazareva
+publicly revealing participant identity
+
+8. Commercial Use
+For training your models on data generated by BIVREST, agreement with the method author is required.
+
+Contacts: Olesya Lazareva
+
 Telegram: @olesyalazarevalove
 
-Related Documentation
-Full protocol: /protocol/BIVREST_method.md
+Email: psi-tech@yandex.com
 
-API Reference: /protocol/API_reference.md
-
-Game rules: /game/Universe69_rules.md
-
-Related project: UNIVERSE 69
+9. Versioning
